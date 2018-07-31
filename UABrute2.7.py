@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.7
 
 import sys
 import urllib2
@@ -7,13 +7,21 @@ import re
 from argparse import ArgumentParser
 import itertools
 from operator import itemgetter
+import os
 
 parser = ArgumentParser()
 parser.add_argument("-u", "--url", help="UABrute.py -url https://example.com.", required=True)
 parser.add_argument("-d", "--downloadallfiles", help=" UABrute.py -url https://example.com --downloadallfiles",
-    required=False, type=bool)
+    required=False, action='store_true')
 args = parser.parse_args()
 
+
+def makedir(folder):
+    current_directory = os.getcwd()
+    final_directory = os.path.join(current_directory, folder)
+    if not os.path.exists(final_directory):
+        os.makedirs(final_directory)
+    return final_directory
 
 def hashvar(var):
     m = hashlib.md5()
@@ -27,27 +35,33 @@ def downloader(url,ua,d):
     headers = {'User-Agent': ua}
     req = urllib2.Request(url, None, headers)
     html = urllib2.urlopen(req).read()
+    hashsum = hashvar(html)
     if d is True:
-        site = re.sub("^.+\:", "", url)
+        site = re.sub("http.+//", "", url)
+        site = re.sub("\/.+", "", site)
+        #print site
+	ndir = makedir(site)
         print("Downloading " + str(url) + " with user agent " + str(ua))
-        with open('site', 'w') as f:
+        with open(ndir + os.sep +  hashsum, 'w') as f:
             f.write(html)
     return html
 
 
 def yes_or_no(question):
     reply = str(raw_input(question+' (y/n): ')).lower().strip()
-    if reply[0] == 'y':
-        return True
-    if reply[0] == 'n':
-        return False
-    else:
-        return yes_or_no("Uhhhh... please enter ")
+    try:
+        if reply[0] == 'y':
+            return True
+    	if reply[0] == 'n':
+            return False
+    except IndexError as error:
+            return yes_or_no(question)
 
 
 def browserinfoparse(d):
     ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36'
     url = 'http://www.browser-info.net/useragents'
+    d = False
     browserinfo = downloader(url, ua, d)
     if len(browserinfo) == 0:
         print(url + 'is no longer available please contact author.')
@@ -75,14 +89,14 @@ def iterator(site_list):
         if len(slist) == 1:
             print("Unique response received from user agent string.")
             print(slist)
-            download = yes_or_no("Do you want to download the site with this user agent? y/n")
+            download = yes_or_no("Do you want to download the site with this user agent?")
             if download == True:
                 downloader(args.url, slist[0], download)
             else:
                 pass
         elif len(slist) == totalUserAgentStrings:
             print("No unique response from site based on user agent string.")
-            download = yes_or_no("Do you want to download the site with this user agent? y/n")
+            download = yes_or_no("Do you want to download the site with this user agent?")
             if download == True:
                 downloader(args.url, slist[0], download)
             else:
@@ -109,7 +123,7 @@ def main():
             site_list.append({'userAgent': userAgent, 'hashsum': hashsum})
         except:
             pass
-    print site_list
+    #print site_list
     iterator(site_list)
 
 
