@@ -8,6 +8,8 @@ from argparse import ArgumentParser
 import itertools
 from operator import itemgetter
 import os
+import time
+import datetime
 
 parser = ArgumentParser()
 parser.add_argument("-u", "--url", help="UABrute.py -url https://example.com.", required=True)
@@ -16,12 +18,21 @@ parser.add_argument("-d", "--downloadallfiles", help=" UABrute.py -url https://e
 args = parser.parse_args()
 
 
+def tee(text):
+    print text
+    ts = time.time()
+    st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+    with open("UA_BruteLogfile", 'a+') as f:
+	f.write(st + " " + text + "\n")
+
+
 def makedir(folder):
     current_directory = os.getcwd()
     final_directory = os.path.join(current_directory, folder)
     if not os.path.exists(final_directory):
         os.makedirs(final_directory)
     return final_directory
+
 
 def hashvar(var):
     m = hashlib.md5()
@@ -41,7 +52,7 @@ def downloader(url,ua,d):
         site = re.sub("\/.+", "", site)
         #print site
 	ndir = makedir(site)
-        print("Downloading " + str(url) + " with user agent " + str(ua))
+        tee("Downloading " + str(url) + " with user agent " + str(ua))
         with open(ndir + os.sep +  hashsum, 'w') as f:
             f.write(html)
     return html
@@ -67,7 +78,7 @@ def browserinfoparse(d):
         print(url + 'is no longer available please contact author.')
         sys.exit()
     else:
-        print("Pulling list of most commonly utilized User Agent Strings.")
+        tee("Pulling list of most commonly utilized User Agent Strings.")
     ua_list = []
     spbrowserinfo = browserinfo.split("<")
     for i in spbrowserinfo:
@@ -80,30 +91,29 @@ def browserinfoparse(d):
 
 def iterator(site_list):
     totalUserAgenStrings = len(site_list)
-    print "{0} user agents downloaded.".format(str(totalUserAgenStrings))
+    tee( "{0} user agents downloaded.".format(str(totalUserAgenStrings)))
     sorted_site = sorted(site_list, key=itemgetter('hashsum'))
     sorted_list = []
     for key, group in itertools.groupby(sorted_site, key=lambda x: x['hashsum']):
         sorted_list.append(list(group))
     for slist in sorted_list:
-        if len(slist) == 1:
-            print("Unique response received from user agent string.")
-            print(slist)
+	if len(slist) == 1:
+            tee("Unique response received from user agent string.")
+            tee(str(slist))
             download = yes_or_no("Do you want to download the site with this user agent?")
             if download == True:
                 downloader(args.url, slist[0], download)
             else:
                 pass
         elif len(slist) == totalUserAgentStrings:
-            print("No unique response from site based on user agent string.")
+            tee("No unique response from site based on user agent string.")
             download = yes_or_no("Do you want to download the site with this user agent?")
             if download == True:
                 downloader(args.url, slist[0], download)
             else:
                 pass
         else:
-            print("Multiple responses based on multiple user agent strings.")
-
+	    pass
 
 def main():
     # Iterate over UserAgents
@@ -113,11 +123,11 @@ def main():
         d = True
     userAgents = browserinfoparse(d)
     print("")
-    print("Initating requests against " + args.url + " with found user agent strings.")
+    tee("Initating requests against " + args.url + " with found user agent strings.")
     print("")
     site_list = []
     for userAgent in userAgents:
-        try:
+	try:
             htm = downloader(args.url, userAgent, d)
             hashsum = hashvar(htm)
             site_list.append({'userAgent': userAgent, 'hashsum': hashsum})
@@ -131,5 +141,5 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        print("Exiting....")
+        tee("Exiting....")
         sys.exit()
