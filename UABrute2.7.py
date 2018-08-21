@@ -45,16 +45,19 @@ def downloader(url,ua,d):
     # type: (object, object) -> object
     headers = {'User-Agent': ua}
     req = urllib2.Request(url, None, headers)
-    html = urllib2.urlopen(req).read()
+    resp = urllib2.urlopen(req)
+    headercode = resp.getcode()
+    html = resp.read()
     hashsum = hashvar(html)
     if d is True:
         site = re.sub("http.+//", "", url)
         site = re.sub("\/.+", "", site)
         #print site
-	ndir = makedir(site)
-        tee("Downloading " + str(url) + " with user agent " + str(ua))
+        ndir = makedir(site)
+        #tee("Downloading " + str(url) + " with user agent " + str(ua))
         with open(ndir + os.sep +  hashsum, 'w') as f:
             f.write(html)
+    tee("Site returned code: " + str(headercode) + " with User Agent: " + str(ua) + 'with hash: ' + str(hashsum) a)
     return html
 
 
