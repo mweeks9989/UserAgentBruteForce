@@ -57,7 +57,7 @@ def downloader(url,ua,d):
         #tee("Downloading " + str(url) + " with user agent " + str(ua))
         with open(ndir + os.sep +  hashsum, 'w') as f:
             f.write(html)
-    tee("Site returned code: " + str(headercode) + " with User Agent: " + str(ua) + 'with hash: ' + str(hashsum) a)
+    tee("Site returned code: " + str(headercode) + " with User Agent: " + str(ua) + 'with hash: ' + str(hashsum) )
     return html
 
 
