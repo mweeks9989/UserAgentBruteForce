@@ -22,7 +22,7 @@ def tee(text):
     print text
     ts = time.time()
     st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-    with open("UA_BruteLogfile", 'a+') as f:
+    with open("UA_BruteLogfile.log", 'a+') as f:
 	f.write(st + " " + text + "\n")
 
 
@@ -40,6 +40,20 @@ def hashvar(var):
     r = m.hexdigest()
     return r
 
+def webwrite(url,d,hashsum,html):
+    if d is True:
+	webdownloads = "sitedownloads"
+        if os.path.exists(webdownloads):
+	    pass
+	else:
+	    makedir(webdownloads)
+	site = re.sub("http.+//", "", url)
+        site = re.sub("\/.+", "", site)
+        #print site
+        ndir = makedir(webdownloads + os.sep + site)
+        #tee("Downloading " + str(url) + " with user agent " + str(ua))
+        with open(ndir + os.sep +  hashsum, 'w') as f:
+            f.write(html)
 
 def downloader(url,ua,d):
     # type: (object, object) -> object
@@ -50,14 +64,15 @@ def downloader(url,ua,d):
     html = resp.read()
     hashsum = hashvar(html)
     if d is True:
-        site = re.sub("http.+//", "", url)
-        site = re.sub("\/.+", "", site)
+        webwrite(url,d,hashsum,html)
+	#site = re.sub("http.+//", "", url)
+        #site = re.sub("\/.+", "", site)
         #print site
-        ndir = makedir(site)
+        #ndir = makedir(site)
         #tee("Downloading " + str(url) + " with user agent " + str(ua))
-        with open(ndir + os.sep +  hashsum, 'w') as f:
-            f.write(html)
-    tee("Site returned code: " + str(headercode) + " with User Agent: " + str(ua) + 'with hash: ' + str(hashsum) )
+        #with open(ndir + os.sep +  hashsum, 'w') as f:
+        #    f.write(html)
+    tee("Site returned code: " + str(headercode) + " with User Agent: " + str(ua) + ' with hash: ' + str(hashsum) )
     return html
 
 
@@ -131,7 +146,7 @@ def main():
     site_list = []
     for userAgent in userAgents:
 	try:
-            htm = downloader(args.url, userAgent, d)
+            htm = downloader(args.url, userAgent, "False")
             hashsum = hashvar(htm)
             site_list.append({'userAgent': userAgent, 'hashsum': hashsum})
         except:
