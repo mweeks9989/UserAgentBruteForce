@@ -65,13 +65,6 @@ def downloader(url,ua,d):
     hashsum = hashvar(html)
     if d is True:
         webwrite(url,d,hashsum,html)
-	#site = re.sub("http.+//", "", url)
-        #site = re.sub("\/.+", "", site)
-        #print site
-        #ndir = makedir(site)
-        #tee("Downloading " + str(url) + " with user agent " + str(ua))
-        #with open(ndir + os.sep +  hashsum, 'w') as f:
-        #    f.write(html)
     tee("Site returned code: " + str(headercode) + " with User Agent: " + str(ua) + ' with hash: ' + str(hashsum) )
     return html
 
@@ -88,26 +81,39 @@ def yes_or_no(question):
 
 
 def browserinfoparse(d):
-    ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36'
-    url = 'http://www.browser-info.net/useragents'
-    d = False
-    browserinfo = downloader(url, ua, d)
-    if len(browserinfo) == 0:
-        print(url + 'is no longer available please contact author.')
-        sys.exit()
+    ualist = "UA.list"
+    fileCreation = os.path.getctime(ualist)
+    now = time.time()
+    twodays_ago = now - 60*60*24*2 # Number of seconds in two days
+    if fileCreation < twodays_ago:
+       ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36'
+       url = 'http://www.browser-info.net/useragents'
+       d = False
+       browserinfo = downloader(url, ua, d)
+       if len(browserinfo) == 0:
+           print(url + 'is no longer available - using cached UA.list.')
+           #sys.exit()
+       else:
+           tee("Pulling list of most commonly utilized User Agent Strings.")
+       ua_list = []
+       spbrowserinfo = browserinfo.split("<")
+       for i in spbrowserinfo:
+           if 'useragent?q=' in i:
+               line = re.sub('^.+>', '', i)
+               if len(line) != 0:
+                   ua_list.append(line.rstrip())
+		   #with open("UA.lst", 'a+') as f:
+        	   #    f.write(line + "\n")
+       lines = list(line for line in ua_list if line)
+       with open(ualist, 'w') as f:
+           for line in lines:
+               f.write(line + '\n') 
     else:
-        tee("Pulling list of most commonly utilized User Agent Strings.")
-    ua_list = []
-    spbrowserinfo = browserinfo.split("<")
-    for i in spbrowserinfo:
-        if 'useragent?q=' in i:
-            line = re.sub('^.+>', '', i)
-            if len(line) != 0:
-                ua_list.append(line)
+        with open(ualist) as f:
+            ua_list = list(line.strip() for line in f.readlines())
     return ua_list
 
-
-def iterator(site_list):
+def iterator(site_list,d):
     totalUserAgenStrings = len(site_list)
     tee( "{0} user agents downloaded.".format(str(totalUserAgenStrings)))
     sorted_site = sorted(site_list, key=itemgetter('hashsum'))
@@ -115,23 +121,27 @@ def iterator(site_list):
     for key, group in itertools.groupby(sorted_site, key=lambda x: x['hashsum']):
         sorted_list.append(list(group))
     for slist in sorted_list:
-	if len(slist) == 1:
-            tee("Unique response received from user agent string.")
-            tee(str(slist))
-            download = yes_or_no("Do you want to download the site with this user agent?")
-            if download == True:
-                downloader(args.url, slist[0], download)
+        if d == True:
+            downloader(args.url, slist[0], True)
+        elif d == False:
+            if len(slist) == 1:
+                tee("Unique response received from user agent string.")
+                tee(str(slist))
+                download = yes_or_no("Do you want to download the site with this user agent?")
+                if download == True:
+                    downloader(args.url, slist[0], download)
+                else:
+                    pass
+            elif len(slist) == totalUserAgentStrings:
+                tee("No unique response from site based on user agent string.")
+                download = yes_or_no("Do you want to download the site with this user agent?")
+                if download == True:
+                    downloader(args.url, slist[0], download)
+                else:
+                    pass
             else:
-                pass
-        elif len(slist) == totalUserAgentStrings:
-            tee("No unique response from site based on user agent string.")
-            download = yes_or_no("Do you want to download the site with this user agent?")
-            if download == True:
-                downloader(args.url, slist[0], download)
-            else:
-                pass
-        else:
-	    pass
+		pass
+
 
 def main():
     # Iterate over UserAgents
@@ -139,12 +149,15 @@ def main():
         d = False
     else:
         d = True
+    
     userAgents = browserinfoparse(d)
     print("")
     tee("Initating requests against " + args.url + " with found user agent strings.")
     print("")
+    #print(userAgents)
     site_list = []
     for userAgent in userAgents:
+	print(userAgent)
 	try:
             htm = downloader(args.url, userAgent, "False")
             hashsum = hashvar(htm)
@@ -152,7 +165,7 @@ def main():
         except:
             pass
     #print site_list
-    iterator(site_list)
+    iterator(site_list,args.downloadallfiles)
 
 
 if __name__ == '__main__':
