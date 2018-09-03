@@ -114,14 +114,15 @@ def browserinfoparse(d):
     return ua_list
 
 def iterator(site_list,d):
-    totalUserAgenStrings = len(site_list)
-    tee( "{0} user agents downloaded.".format(str(totalUserAgenStrings)))
+    totalUserAgentStrings = len(site_list)
+    tee( "{0} user agents downloaded.".format(str(totalUserAgentStrings)))
     sorted_site = sorted(site_list, key=itemgetter('hashsum'))
     sorted_list = []
     for key, group in itertools.groupby(sorted_site, key=lambda x: x['hashsum']):
         sorted_list.append(list(group))
+    #print sorted_list
     for slist in sorted_list:
-        if d == True:
+	if d == True:
             downloader(args.url, slist[0], True)
         elif d == False:
             if len(slist) == 1:
@@ -134,7 +135,7 @@ def iterator(site_list,d):
                     pass
             elif len(slist) == totalUserAgentStrings:
                 tee("No unique response from site based on user agent string.")
-                download = yes_or_no("Do you want to download the site with this user agent?")
+                download = yes_or_no("Do you want to download the site?")
                 if download == True:
                     downloader(args.url, slist[0], download)
                 else:
@@ -157,14 +158,14 @@ def main():
     #print(userAgents)
     site_list = []
     for userAgent in userAgents:
-	print(userAgent)
+	#print(userAgent)
 	try:
             htm = downloader(args.url, userAgent, "False")
             hashsum = hashvar(htm)
             site_list.append({'userAgent': userAgent, 'hashsum': hashsum})
         except:
             pass
-    #print site_list
+    #print len(site_list)
     iterator(site_list,args.downloadallfiles)
 
 
